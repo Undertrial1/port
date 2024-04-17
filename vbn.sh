@@ -1,23 +1,18 @@
-#!/bin/bash
+import psutil
 
-# Получаем количество ядер в системе
-core_count=$(grep -c ^processor /proc/cpuinfo)
+def get_multi_core_processes():
+    multi_core_processes = []
+    for proc in psutil.process_iter(['pid', 'name', 'cpu_affinity']):
+        cpu_affinity = proc.info['cpu_affinity']
+        if cpu_affinity and len(cpu_affinity) > 2:
+            multi_core_processes.append(proc)
+    return multi_core_processes
 
-# Получаем список всех процессов
-processes=$(ps -eo pid,comm)
-
-echo "Processes using more than 2 cores:"
-
-# Проходим по каждому процессу
-while IFS= read -r line; do
-    pid=$(echo "$line" | awk '{print $1}')
-    cmd=$(echo "$line" | awk '{$1=""; print $0}')
-
-    # Получаем количество ядер, используемых процессом
-    cores_used=$(taskset -cp "$pid" | grep -o 'cpuset:[0-9\-]*' | awk -F: '{print NF-1}')
-
-    # Если количество ядер больше двух, выводим информацию о процессе
-    if [ "$cores_used" -gt 2 ]; then
-        echo "PID: $pid, Command: $cmd"
-    fi
-done <<< "$processes"
+if __name__ == "__main__":
+    multi_core_procs = get_multi_core_processes()
+    if multi_core_procs:
+        print("Processes using more than 2 cores:")
+        for proc in multi_core_procs:
+            print(f"PID: {proc.info['pid']}, Name: {proc.info['name']}, CPU Affinity: {proc.info['cpu_affinity']}")
+    else:
+        print("No processes found using more than 2 cores.")
