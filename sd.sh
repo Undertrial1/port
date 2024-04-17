@@ -1,28 +1,33 @@
 import psutil
 
-def get_linux_processes():
+def find_process_location(process_name, username):
     try:
         # Получаем список всех процессов
         all_processes = psutil.process_iter()
-        process_list = []
         for process in all_processes:
             try:
-                # Получаем информацию о каждом процессе и добавляем в список
-                process_info = process.as_dict(attrs=['pid', 'name', 'username', 'cpu_percent', 'memory_percent'])
-                process_list.append(process_info)
+                # Получаем информацию о каждом процессе
+                process_info = process.as_dict(attrs=['name', 'pid', 'username', 'memory_percent'])
+                if process_info['name'] == process_name and process_info['username'] == username:
+                    # Получаем информацию о пути к исполняемому файлу процесса
+                    process_exe = psutil.Process(process_info['pid']).exe()
+                    return process_exe
             except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
                 pass
-        return process_list
+        return None
     except Exception as e:
-        print("Ошибка при получении списка процессов:", e)
+        print("Ошибка при поиске процесса:", e)
         return None
 
-# Получаем список процессов
-process_list = get_linux_processes()
+# Имя процесса и имя пользователя
+process_name = ".python3.6"
+username = "odoo"
 
-# Выводим список процессов
-if process_list:
-    for process in process_list:
-        print(process)
+# Поиск расположения файла процесса
+process_location = find_process_location(process_name, username)
+
+# Вывод расположения файла процесса
+if process_location:
+    print("Расположение файла для процесса {} пользователя {}: {}".format(process_name, username, process_location))
 else:
-    print("Не удалось получить список процессов.")
+    print("Процесс {} пользователя {} не найден или нет прав доступа к информации о нем.".format(process_name, username))
