@@ -9,7 +9,7 @@ processes=$(ps -eo pid,comm)
 echo "Processes using more than 2 cores:"
 
 # Проходим по каждому процессу
-while read -r line; do
+while IFS= read -r line; do
     pid=$(echo "$line" | awk '{print $1}')
     cmd=$(echo "$line" | awk '{$1=""; print $0}')
 
